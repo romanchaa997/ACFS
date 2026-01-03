@@ -10,19 +10,24 @@ export const analyzeCasinoWithGemini = async (url: string): Promise<CasinoAnalys
   const ai = new GoogleGenAI({ apiKey: API_KEY });
   const model = 'gemini-3-pro-preview';
 
-  const prompt = `Perform a high-level forensic security audit for the casino domain: ${url}. 
-  Examine domain reputation, SSL certificate status (including exact expiration date if possible), license validity, and specific dark patterns in the Terms of Service.
+  const prompt = `Perform an advanced forensic security audit for: ${url}.
+  Classify the target using the Audityzer UAR-R1 to UAR-R9 risk registry.
   
-  Critical Requirements:
-  - Identify the exact license issuer and jurisdiction (e.g. Curacao Gaming, MGA, UKGC).
-  - Verify SSL expiration date.
-  - Detail specific red flags in TOS with granular explanations (e.g. "Max win cap of $500 on bonuses", "Mandatory 3x wager on raw deposits").
-  - Detail payment methods and specifically flag those associated with high fraud risk (e.g. untraceable crypto, obscure third-party processors, non-PCI compliant gateways).
+  Audit parameters:
+  - Probability (1-5) and Impact (1-5) for a 5x5 Risk Matrix.
+  - Identification of Zone (FRONT/REAR) and Threat Vectors.
+  - Security state assessment (PQC readiness, Secure Boot estimation).
+  - Standard features: Domain reputation, SSL (exact expiry), License (Issuer/Jurisdiction), TOS Red Flags, and Payment Risk.
 
-  Respond with a JSON object following the structure:
+  Respond with JSON:
   {
-    "riskScore": number (0-100),
+    "riskScore": number,
     "riskLevel": "LOW" | "MEDIUM" | "HIGH" | "CRITICAL",
+    "probability": number,
+    "impact": number,
+    "zone": "FRONT" | "NEAR_FRONT" | "REAR",
+    "threatVector": string[],
+    "securityState": { "pqc": "FULL" | "PARTIAL" | "OFF", "secureBoot": boolean, "idsEnabled": boolean },
     "features": {
       "domainAge": string,
       "sslValid": boolean,
@@ -32,12 +37,8 @@ export const analyzeCasinoWithGemini = async (url: string): Promise<CasinoAnalys
       "licenseIssuer": string,
       "licenseJurisdiction": string,
       "regulatorMatch": boolean,
-      "tosRedFlags": [
-        {"flag": string, "explanation": string}
-      ],
-      "paymentMethods": [
-        {"name": string, "isHighRisk": boolean, "fraudAlert": string}
-      ]
+      "tosRedFlags": [{"flag": string, "explanation": string}],
+      "paymentMethods": [{"name": string, "isHighRisk": boolean, "fraudAlert": string}]
     },
     "summary": string
   }`;
@@ -53,6 +54,18 @@ export const analyzeCasinoWithGemini = async (url: string): Promise<CasinoAnalys
           properties: {
             riskScore: { type: Type.NUMBER },
             riskLevel: { type: Type.STRING },
+            probability: { type: Type.NUMBER },
+            impact: { type: Type.NUMBER },
+            zone: { type: Type.STRING },
+            threatVector: { type: Type.ARRAY, items: { type: Type.STRING } },
+            securityState: {
+              type: Type.OBJECT,
+              properties: {
+                pqc: { type: Type.STRING },
+                secureBoot: { type: Type.BOOLEAN },
+                idsEnabled: { type: Type.BOOLEAN }
+              }
+            },
             features: {
               type: Type.OBJECT,
               properties: {
@@ -71,8 +84,7 @@ export const analyzeCasinoWithGemini = async (url: string): Promise<CasinoAnalys
                     properties: {
                       flag: { type: Type.STRING },
                       explanation: { type: Type.STRING }
-                    },
-                    required: ["flag", "explanation"]
+                    }
                   }
                 },
                 paymentMethods: {
@@ -83,25 +95,23 @@ export const analyzeCasinoWithGemini = async (url: string): Promise<CasinoAnalys
                       name: { type: Type.STRING },
                       isHighRisk: { type: Type.BOOLEAN },
                       fraudAlert: { type: Type.STRING }
-                    },
-                    required: ["name", "isHighRisk"]
+                    }
                   }
                 }
-              },
-              required: ["domainAge", "sslValid", "sslExpiry", "licenseFound", "licenseType", "licenseIssuer", "licenseJurisdiction", "regulatorMatch", "tosRedFlags", "paymentMethods"]
+              }
             },
             summary: { type: Type.STRING }
-          },
-          required: ["riskScore", "riskLevel", "features", "summary"]
+          }
         }
       }
     });
 
     const data = JSON.parse(response.text || '{}');
     return {
-      id: Math.random().toString(36).substr(2, 9),
+      id: `UA-${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
       url,
       timestamp: new Date().toISOString(),
+      integration: 'SUCCESS',
       ...data
     };
   } catch (error) {

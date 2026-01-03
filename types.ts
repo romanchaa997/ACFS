@@ -17,12 +17,23 @@ export interface PaymentMethod {
   fraudAlert?: string;
 }
 
+export type IntegrationStatus = 'PENDING' | 'SYNCING' | 'SUCCESS' | 'FAILED';
+
 export interface CasinoAnalysis {
   id: string;
   url: string;
   timestamp: string;
   riskScore: number;
   riskLevel: RiskLevel;
+  probability: number; // 1-5
+  impact: number;      // 1-5
+  zone: 'FRONT' | 'NEAR_FRONT' | 'REAR';
+  threatVector: string[];
+  securityState: {
+    pqc: 'FULL' | 'PARTIAL' | 'OFF';
+    secureBoot: boolean;
+    idsEnabled: boolean;
+  };
   features: {
     domainAge: string;
     sslValid: boolean;
@@ -36,13 +47,7 @@ export interface CasinoAnalysis {
     paymentMethods: PaymentMethod[];
   };
   summary: string;
-}
-
-export interface RegulatoryStatus {
-  source: 'KRAIL' | 'PlayCity' | 'UKGC' | 'MGA';
-  lastSync: string;
-  status: 'Operational' | 'Syncing' | 'Error';
-  count: number;
+  integration: IntegrationStatus;
 }
 
 export interface UserPlan {
