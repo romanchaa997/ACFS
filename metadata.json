@@ -1,0 +1,7 @@
+{
+  "name": "Audityzer: Casino Fraud Scanner",
+  "description": "Enterprise-grade B2B platform for real-time casino fraud detection, regulatory compliance tracking (KRAIL, PlayCity), and ML-driven risk assessment.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
